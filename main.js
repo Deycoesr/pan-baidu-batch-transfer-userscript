@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         百度云直链批量传输
-// @version      1.0.1-alpha
+// @version      1.1.1
 // @description  百度云直链批量传输
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
@@ -63,69 +63,17 @@
   }, 200);
 
   function appendBtn(buttonGroup) {
-    let batchSaveBtn = document.createElement("button");
-    batchSaveBtn.btnType = 0;
-    batchSaveBtn.id = BUTTON_EXIST_ID;
-    batchSaveBtn.originalInnerText = "批量传输";
-    batchSaveBtn.innerText = batchSaveBtn.originalInnerText;
-    batchSaveBtn.onclick = (e) => batchSave.call(batchSaveBtn, e);
+    let batchTransferBtn = document.createElement("button");
+    batchTransferBtn.btnType = 0;
+    batchTransferBtn.id = BUTTON_EXIST_ID;
+    batchTransferBtn.originalInnerText = "批量传输";
+    batchTransferBtn.innerText = batchTransferBtn.originalInnerText;
+    batchTransferBtn.onclick = (e) => batchTransfer.call(batchTransferBtn, e);
     // noinspection JSValidateTypes
-    batchSaveBtn.style = `background-color: #f0faff; border-bottom-left-radius: 16px; \
-       border-top-left-radius: 16px; margin-left: 5px; padding-left: \
-       16px; padding-right: 8px; border: 0; \
-       margin-right: -1px; height: 32px;`;
+    batchTransferBtn.style = `background-color: #f0faff; border-radius: 16px; margin-left: 5px; padding-left: 16px; padding-right: 16px; border: 0; \
+       margin-right: 5px; height: 32px;`;
 
-    buttonGroup.append(batchSaveBtn);
-
-    let batchUploadBtn = document.createElement("button");
-    batchUploadBtn.btnType = 1;
-    batchUploadBtn.originalInnerText = "选择文件夹";
-    batchUploadBtn.innerText = batchUploadBtn.originalInnerText;
-    batchUploadBtn.onclick = function () {
-      let batchUploadInput = document.createElement("input");
-      batchUploadInput.type = "file";
-      batchUploadInput.webkitdirectory = true;
-      batchUploadInput.multiple = true;
-      batchUploadInput.onchange = (e) => parseFolder.call(batchUploadBtn, e);
-      batchUploadInput.click();
-    };
-    // noinspection JSValidateTypes
-    batchUploadBtn.style = `background-color: #f0faff; border-bottom-right-radius: 16px; \
-      border-top-right-radius: 16px; padding-right: 16px; \
-      padding-left: 8px; margin-right: 5px; \
-      border: 0; height: 32px`;
-
-    buttonGroup.append(createDividerElement());
-    buttonGroup.append(batchUploadBtn);
-
-    let lastOptInfo = localStorage[LAST_OPT_INFO_LOCAL_STOREAGE_KEY];
-    if (typeof lastOptInfo === "string") {
-      lastOptInfo = JSON.parse(lastOptInfo);
-      const btnTypeAry = [batchSaveBtn, batchUploadBtn];
-
-      let showLastOptInfoIntervalId,
-        remainSeconds = 6;
-      let showLastOptInfoFun = () => {
-        remainSeconds--;
-        let targetBtn = btnTypeAry[lastOptInfo.btnType];
-        targetBtn.innerText =
-          "上次共传输 " + lastOptInfo.total + " 个链接 (" + remainSeconds + ")";
-        if (remainSeconds < 1) {
-          targetBtn.innerText = targetBtn.originalInnerText;
-          localStorage.removeItem(LAST_OPT_INFO_LOCAL_STOREAGE_KEY);
-          clearInterval(showLastOptInfoIntervalId);
-        }
-      };
-      showLastOptInfoFun.call();
-      showLastOptInfoIntervalId = setInterval(showLastOptInfoFun, 1000);
-    }
-  }
-
-  function createDividerElement() {
-    let elem = document.createElement("span");
-    // noinspection JSValidateTypes
-    elem.style = "border-left: 1px solid black; height: 11px; margin-top: 11px";
-    return elem;
+    buttonGroup.append(batchTransferBtn);
   }
 
   const PATH_SPLIT_REGEX = /[/\\]/,
@@ -137,24 +85,107 @@
       let texts = [];
       for (const file of files) {
         if (file.type === "text/plain") {
-          texts.push(await file.text());
+          let text = await file.text();
+          texts.push(text.trim());
         }
       }
-      let urls = texts.reduce((left, right) => left + "\n" + right, "");
+      let urls = texts.join("\n");
 
-      await doBatchSave.call(this, urls);
+      let urlsTextarea = document.getElementById("urls-textarea");
+      if (urlsTextarea) {
+        urlsTextarea.value = urlsTextarea.value + urls;
+      } else {
+        urlsTextarea.value = urls;
+      }
+
     } else {
       unsafeWindow.alert("未能获得到文件");
     }
   }
 
-  async function batchSave() {
-    let urlsText = prompt("以 '空格' 或 '换行' 作为间隔符\n输入分享链接:");
-    if (!urlsText) {
-      return;
+  async function batchTransfer() {
+    const now = new Date();
+    if (!document.getElementById("batch-transfer-panel")) {
+      document.body.insertAdjacentHTML("afterend", `
+<div id="batch-transfer-panel" style="position: absolute;top: 50%;left: 50%;transform: translate(-50%,-50%);border: 1px solid;background-color: white;height: 585px;">
+<div id="batch-transfer-panel-close" style="float: right;margin-right: 2px;margin-top: -2px;font-size: x-large;cursor: pointer;">X</div>
+<div style="padding: 30px">
+<table id="main-table" style="width: 650px;height: 500px;">
+<tr>
+    <td style="width: 80px">链接:</td>
+    <td style="height: 0;"><textarea id="urls-textarea" rows="20" style="padding: 5px;border: 1px solid;width: 100%"></textarea></td>
+</tr>
+<tr style="text-align: center;height: 10%;">
+    <td colspan="2"><button id="parse-folder-button" style="background-color: rgba(0,0,0,0); padding: 0 16px 0 16px; border: 1px solid; height: 32px">解析文件</input></td>
+</tr>
+<tr>
+    <td>存储地址:</td>
+    <td><input style="width: 100%;border: 1px solid;padding: 5px;" id="target-path" type="text" value="/${now.getFullYear()}年/${now.getMonth() + 1}月/${now.getDate()}号"/></td>
+</tr>
+</table>
+<div id="status-table-div" style="display: none;width: 650px;height: 490px;margin-bottom: 10px;overflow: auto;border: 1px solid;padding: 5px;">
+ <table id="status-table"></table>
+</div>
+<div style="width: 100%;text-align: center;">
+<button id="transfer-button" style="background-color: rgba(0,0,0,0);font-size: x-large;padding: 5px 23px 5px 23px; border: 1px solid; height: 45px">转存</button>
+</div>
+</div>
+</div>
+`);
+    }
+    let parseFolderButton = document.getElementById("parse-folder-button");
+    parseFolderButton.onclick = function () {
+      let batchUploadInput = document.createElement("input");
+      batchUploadInput.type = "file";
+      batchUploadInput.webkitdirectory = true;
+      batchUploadInput.multiple = true;
+      batchUploadInput.onchange = (e) => parseFolder.call(parseFolderButton, e);
+      batchUploadInput.click();
+    };
+
+    let transferButton = document.getElementById("transfer-button");
+    transferButton.onclick = () => {
+      let mainTable = document.getElementById("main-table");
+      mainTable.attributeStyleMap.set("display", "none");
+
+      let urlsTextarea = document.getElementById("urls-textarea");
+      let urls = urlsTextarea.value
+        .split(URLS_SPLIT_REGEX)
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0);
+
+      urls = populateUrls(urls);
+
+      if (urls.length === 0) {
+        unsafeWindow.alert("未能获得有效的链接");
+        return;
+      }
+
+      let statusTable = document.getElementById("status-table");
+      document.getElementById("status-table-div").attributeStyleMap.delete("display");
+
+      for (let i = 0; i < urls.length; i++) {
+        let url = urls[i];
+        statusTable.insertAdjacentHTML("beforeend",
+          `<tr style="height: 10px"><td style="width: 540px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
+        )
+      }
+
+      transferButton.innerText = "转存中";
+      console.log("batch-save; 有效的 urls = " + urls);
+
+      doBatchTransfer(urls, document.getElementById("target-path").value)
+        .finally(() => {
+          transferButton.onclick = () => {
+            unsafeWindow.location.reload();
+          }
+          transferButton.innerText = "完成";
+        })
     }
 
-    await doBatchSave.call(this, urlsText);
+    document.getElementById("batch-transfer-panel-close").onclick = () =>{
+      document.getElementById("batch-transfer-panel").remove();
+    }
   }
 
   /**
@@ -189,7 +220,7 @@
     return [...new Set(urls)];
   }
 
-  async function doBatchSave(urlsText) {
+  async function doBatchTransfer(urls, targetPath) {
     // noinspection JSUnresolvedReference
     const globalContext = {
       baseUrl: "https://pan.baidu.com",
@@ -197,33 +228,8 @@
       bdstoken: unsafeWindow.locals.userInfo.bdstoken
     };
 
-    let urls = urlsText
-      .split(URLS_SPLIT_REGEX)
-      .map((url) => url.trim())
-      .filter((url) => url.length > 0);
-
-    urls = populateUrls(urls);
-
-    if (urls.length === 0) {
-      unsafeWindow.alert("未能获得有效的链接");
-      return;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    this.innerText = "共获得 " + urls.length + " 个有效链接";
-    console.log("batch-save; 有效的 urls = " + urls);
-
-    const now = new Date();
-
-    let targetFolders = prompt(
-      "以 '/' 或 '\\' 作为分隔符\n无效路径默认为根目录\n输入存储路径:",
-      `${now.getFullYear()}年/${now.getMonth() + 1}月/${now.getDate()}号`
-    );
-
-    let errorMap = new Map();
-
-    if (targetFolders) {
-      globalContext.targetPath = targetFolders.split(PATH_SPLIT_REGEX)
+    if (targetPath) {
+      globalContext.targetPath = targetPath.split(PATH_SPLIT_REGEX)
         .map((url) => url.trim())
         .filter((path) => path.length > 0)
         .reduce((prev, curr) => prev + "/" + curr, "");
@@ -240,8 +246,6 @@
     for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
       let url = urls[urlIndex];
       // noinspection JSUnusedGlobalSymbols
-      this.innerText =
-        "正在处理第 " + (urlIndex + 1) + " 个链接，共 " + urls.length + " 个";
 
       let currContext = {
         globalContext: globalContext,
@@ -251,30 +255,27 @@
       }
 
       try {
+        let statusTd = document.getElementById("url-td-" + urlIndex);
+        statusTd.innerText = "验证提取码";
         await verifyPassCode(currContext);
 
+        statusTd.innerText = "获得分享数据";
         await fullCurrContext(currContext);
 
+        statusTd.innerText = "转存中";
         await transferFile(currContext);
+
+        statusTd.innerText = "完成";
       } catch (e) {
         console.error(e);
-        errorMap.set(url, e.message);
+        statusTd.innerText = "失败: " + e.message;
       }
     }
 
     localStorage[LAST_OPT_INFO_LOCAL_STOREAGE_KEY] = JSON.stringify({
-      btnType: this.btnType,
-      total: urls.length,
+      targetPath: globalContext.targetPath
     });
 
-    if (errorMap.size > 0) {
-      let errorMsg = [...errorMap.entries()]
-        .map(([url, errorReason]) => "[" + url + "]的失败原因: " + errorReason)
-        .reduce((prev, curr) => prev + "\n" + curr);
-      unsafeWindow.alert(errorMsg);
-    }
-
-    unsafeWindow.location.reload();
   }
 
   async function createFolderIfNecessary(globalContext) {
