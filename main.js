@@ -71,7 +71,7 @@
     batchTransferBtn.onclick = (e) => batchTransfer.call(batchTransferBtn, e);
     // noinspection JSValidateTypes
     batchTransferBtn.style = `background-color: #f0faff; border-radius: 16px; margin-left: 5px; padding-left: 16px; padding-right: 16px; border: 0; \
-       margin-right: 5px; height: 32px;`;
+       margin-right: 5px; height: 32px; width: 100px`;
 
     buttonGroup.append(batchTransferBtn);
   }
