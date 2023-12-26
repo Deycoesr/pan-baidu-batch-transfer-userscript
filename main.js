@@ -186,8 +186,10 @@
         })
     }
 
-    document.getElementById("batch-transfer-panel-close").onclick = () =>{
-      document.getElementById("batch-transfer-panel").remove();
+    document.getElementById("batch-transfer-panel-close").onclick = () => {
+      if (transferButton.disabled === false) {
+        document.getElementById("batch-transfer-panel").remove();
+      }
     }
   }
 
