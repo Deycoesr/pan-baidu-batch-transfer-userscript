@@ -145,6 +145,8 @@
 
     let transferButton = document.getElementById("transfer-button");
     transferButton.onclick = () => {
+      transferButton.disabled = true;
+
       let mainTable = document.getElementById("main-table");
       mainTable.attributeStyleMap.set("display", "none");
 
@@ -179,6 +181,7 @@
           transferButton.onclick = () => {
             unsafeWindow.location.reload();
           }
+          transferButton.disabled = false;
           transferButton.innerText = "完成";
         })
     }
