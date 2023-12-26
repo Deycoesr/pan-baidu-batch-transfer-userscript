@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         百度云直链批量传输
-// @version      1.1.1
+// @version      1.1.2-TEST
 // @description  百度云直链批量传输
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
