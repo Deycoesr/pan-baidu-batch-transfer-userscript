@@ -259,8 +259,8 @@
         url: url
       }
 
+      let statusTd = document.getElementById("url-td-" + urlIndex);
       try {
-        let statusTd = document.getElementById("url-td-" + urlIndex);
         statusTd.innerText = "验证提取码";
         await verifyPassCode(currContext);
 
