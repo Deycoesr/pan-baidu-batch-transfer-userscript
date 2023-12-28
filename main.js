@@ -1,7 +1,8 @@
 // ==UserScript==
-// @name         百度云直链批量传输
+// @name         百度云直链批量转存
+// @namespace    http://sub.ntt.ink/百度云直链批量转存.user.js
 // @version      1.1.2-TEST
-// @description  百度云直链批量传输
+// @description  百度云直链批量转存
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pan.baidu.com
