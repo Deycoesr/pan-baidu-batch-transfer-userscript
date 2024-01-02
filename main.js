@@ -128,7 +128,7 @@
  <table id="status-table"></table>
 </div>
 <div style="width: 100%;text-align: center;">
-<button id="transfer-button" style="background-color: rgba(0,0,0,0);font-size: x-large;padding: 5px 23px 5px 23px; border: 1px solid; height: 45px">转存</button>
+<button id="main-button" style="background-color: rgba(0,0,0,0);font-size: x-large;padding: 5px 23px 5px 23px; border: 1px solid; height: 45px">转存</button>
 </div>
 </div>
 </div>
@@ -144,12 +144,12 @@
       batchUploadInput.click();
     };
 
-    let transferButton = document.getElementById("transfer-button");
-    transferButton.onclick = () => {
-      transferButton.disabled = true;
+    let mainButton = document.getElementById("main-button");
+    mainButton.onclick = () => {
+      mainButton.disabled = true;
 
       let mainTable = document.getElementById("main-table");
-      mainTable.attributeStyleMap.set("display", "none");
+      mainTable.style.display = "none";
 
       let urlsTextarea = document.getElementById("urls-textarea");
       let urls = urlsTextarea.value
@@ -165,7 +165,7 @@
       }
 
       let statusTable = document.getElementById("status-table");
-      document.getElementById("status-table-div").attributeStyleMap.delete("display");
+      document.getElementById("status-table-div").style.display = null;
 
       for (let i = 0; i < urls.length; i++) {
         let url = urls[i];
@@ -174,21 +174,21 @@
         )
       }
 
-      transferButton.innerText = "转存中";
+      mainButton.innerText = "转存中";
       console.log("batch-save; 有效的 urls = " + urls);
 
       doBatchTransfer(urls, document.getElementById("target-path").value)
         .finally(() => {
-          transferButton.onclick = () => {
+          mainButton.onclick = () => {
             unsafeWindow.location.reload();
           }
-          transferButton.disabled = false;
-          transferButton.innerText = "完成";
+          mainButton.disabled = false;
+          mainButton.innerText = "完成";
         })
     }
 
     document.getElementById("batch-transfer-panel-close").onclick = () => {
-      if (transferButton.disabled === false) {
+      if (mainButton.disabled === false) {
         document.getElementById("batch-transfer-panel").remove();
       }
     }
