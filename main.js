@@ -7,12 +7,110 @@
 // @match        *://pan.baidu.com/disk/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pan.baidu.com
 // @grant        unsafeWindow
+// @grant        GM_addStyle
 // ==/UserScript==
 
 (function () {
   const BUTTON_EXIST_ID = "button-gjoiqp2ielldhabsdi123",
-    // 最后一次操作信息存储 KEY
-    LAST_OPT_INFO_LOCAL_STOREAGE_KEY = "lastOpt:gaojap21ogbiualsjhd1";
+    // 配置存储 KEY
+    CONFIG_LOCAL_STORAGE_KEY = "lastOpt:gaojap21ogbiualsjhd1",
+    PANEL_TABS_IDS = [
+      {
+        id: "main-table", tableChange() {
+          let mainButton = document.getElementById("main-button");
+          mainButton.onclick = () => {
+            mainButton.disabled = true;
+
+            let urlsTextarea = document.getElementById("urls-textarea");
+            let urls = urlsTextarea.value
+              .split(URLS_SPLIT_REGEX)
+              .map((url) => url.trim())
+              .filter((url) => url.length > 0);
+
+            urls = populateUrls(urls);
+
+            if (urls.length === 0) {
+              unsafeWindow.alert("未能获得有效的链接");
+              return;
+            }
+
+            let statusTable = document.getElementById("status-table");
+            showPanelTab(document.getElementById("status-table-div").tabIndex);
+
+            for (let i = 0; i < urls.length; i++) {
+              let url = urls[i];
+              statusTable.insertAdjacentHTML("beforeend",
+                `<tr style="height: 10px"><td style="width: 540px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
+              )
+            }
+
+            mainButton.innerText = "转存中";
+            console.log("batch-save; 有效的 urls = " + urls);
+
+            doBatchTransfer(urls, document.getElementById("target-path").value)
+              .finally(() => {
+                mainButton.onclick = () => {
+                  unsafeWindow.location.reload();
+                }
+                mainButton.disabled = false;
+                mainButton.innerText = "完成";
+              })
+          }
+        }
+      }, {
+        id: "status-table-div", tableChange() {
+        }
+      }, {
+        id: "settings-tab", tableChange() {
+          let mainButton = document.getElementById("main-button");
+          mainButton.innerText = "确定";
+          mainButton.onclick = () => {
+            backLastPanelTab();
+            let targetPath = document.getElementById("default-target-path").value;
+            if (targetPath !== CONFIG.defaultTargetPath) {
+              let oldDefaultTargetPath = parseTargetPath(CONFIG.defaultTargetPath);
+              let targetPathInput = document.getElementById("target-path");
+              if (targetPathInput.value === oldDefaultTargetPath) {
+                targetPathInput.value = parseTargetPath(targetPath);
+              }
+
+              CONFIG.defaultTargetPath = targetPath;
+              storeConfig();
+            }
+          }
+        }
+      }],
+    CSS = `
+#${BUTTON_EXIST_ID} {
+  background-color: #f0faff;
+  border-radius: 16px;
+  margin-left: 5px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border: 0;
+  margin-right: 5px;
+  height: 32px;
+  width: 100px
+}
+.batch-transfer-panel-controls-base-style { float: right; cursor: pointer; width: 24px; height: 30px; display: flex; justify-content: center; align-items: center; }
+#batch-transfer-panel-settings:hover { background-color: #06a7ff }
+#batch-transfer-panel-settings { font-size: large; }
+#batch-transfer-panel-close:hover { background-color: red }
+#batch-transfer-panel-close { font-size: x-large; }
+#batch-transfer-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border: 1px solid; background-color: white; height: 585px; }
+#main-table { width: 650px; height: 500px; }
+.button-base-style { background-color: rgba(0,0,0,0); border: 1px solid;}
+#parse-folder-button { padding: 0 16px 0 16px; height: 32px }
+#main-button { font-size: x-large; padding: 5px 23px 5px 23px; height: 45px }
+#status-table-div { width: 650px; height: 490px; margin-bottom: 10px; overflow: auto; border: 1px solid; padding: 5px; }
+#batch-transfer-panel-body { padding: 35px 30px 30px; }
+#urls-textarea { padding: 5px; border: 1px solid; width: 100% }
+#target-path { width: 100%; }
+.input-base-style { border: 1px solid; padding: 5px; }
+#main-button-container { width: 100%;text-align: center; }
+#settings-tab { width: 650px; height: 490px; padding-top: 10px; text-align: center }
+`;
+  GM_addStyle(CSS);
 
   // https://pan.baidu.com/union/doc/okumlx17r
   const ERRNO_MAP_MESSAGE = new Map([
@@ -71,9 +169,6 @@
     batchTransferBtn.originalInnerText = "批量传输";
     batchTransferBtn.innerText = batchTransferBtn.originalInnerText;
     batchTransferBtn.onclick = (e) => batchTransfer.call(batchTransferBtn, e);
-    // noinspection JSValidateTypes
-    batchTransferBtn.style = `background-color: #f0faff; border-radius: 16px; margin-left: 5px; padding-left: 16px; padding-right: 16px; border: 0; \
-       margin-right: 5px; height: 32px; width: 100px`;
 
     buttonGroup.append(batchTransferBtn);
   }
@@ -105,31 +200,109 @@
     }
   }
 
-  async function batchTransfer() {
+  let tabIndexRecords = [];
+
+  function backLastPanelTab() {
+    let tabIndex = 0;
+    if (tabIndexRecords.length > 1) {
+      tabIndexRecords.pop();
+      tabIndex = tabIndexRecords.pop();
+    }
+    showPanelTab(tabIndex);
+  }
+
+  function showPanelTab(tabIndex) {
+    if (tabIndexRecords.length > 0) {
+      if (tabIndexRecords[tabIndexRecords.length - 1] === tabIndex) {
+        return;
+      }
+    }
+
+    PANEL_TABS_IDS.forEach((tabConfig, index) => {
+      if (index === tabIndex) {
+        if (tabIndexRecords > 50) {
+          tabIndexRecords.shift();
+        }
+        tabIndexRecords.push(tabIndex)
+        document.getElementById(tabConfig.id).style.display = null;
+        tabConfig.tableChange();
+      } else {
+        document.getElementById(tabConfig.id).style.display = "none";
+      }
+    })
+  }
+
+  let CONFIG = {
+    defaultTargetPath: "/{年}年/{月}月/{日}号"
+  };
+
+  function loadConfig() {
+    let configString = localStorage[CONFIG_LOCAL_STORAGE_KEY];
+    if (typeof configString === "string") {
+      let config;
+      try {
+        config = JSON.parse(configString);
+      } catch (e) {
+        console.error(e);
+      }
+      if (config && typeof config.defaultTargetPath === "string") {
+        // 如果有默认路径配置就表示是新配置
+        CONFIG = config;
+      }
+    }
+  }
+
+  function storeConfig() {
+    localStorage[CONFIG_LOCAL_STORAGE_KEY] = JSON.stringify(CONFIG);
+  }
+
+  const TARGET_PATH_REPLACES = [
+    {key: "年", getValue: now => now.getFullYear()},
+    {key: "月", getValue: now => now.getMonth() + 1},
+    {key: "日", getValue: now => now.getDate()}
+  ]
+
+  function parseTargetPath(pathStr) {
     const now = new Date();
+    TARGET_PATH_REPLACES.forEach(replaceConfig => {
+      pathStr = pathStr.replaceAll("{" + replaceConfig.key + "}", replaceConfig.getValue(now));
+    });
+    return pathStr;
+  }
+
+  async function batchTransfer() {
     if (!document.getElementById("batch-transfer-panel")) {
+      loadConfig()
+
       document.body.insertAdjacentHTML("afterend", `
-<div id="batch-transfer-panel" style="position: absolute;top: 50%;left: 50%;transform: translate(-50%,-50%);border: 1px solid;background-color: white;height: 585px;">
-<div id="batch-transfer-panel-close" style="float: right;margin-right: 2px;margin-top: -2px;font-size: x-large;cursor: pointer;">X</div>
-<div style="padding: 30px">
-<table id="main-table" style="width: 650px;height: 500px;">
+<div id="batch-transfer-panel">
+<div id="batch-transfer-panel-close" class="batch-transfer-panel-controls-base-style">✖️</div>
+<div id="batch-transfer-panel-settings" class="batch-transfer-panel-controls-base-style">⚙️</div>
+<div id="batch-transfer-panel-body">
+<table id="main-table" tabIndex="0">
 <tr>
-    <td style="width: 80px">链接:</td>
-    <td style="height: 0;"><textarea id="urls-textarea" rows="20" style="padding: 5px;border: 1px solid;width: 100%"></textarea></td>
+    <td style="width: 45px">链接:</td>
+    <td style="height: 0;"><textarea id="urls-textarea" rows="20"></textarea></td>
 </tr>
 <tr style="text-align: center;height: 10%;">
-    <td colspan="2"><button id="parse-folder-button" style="background-color: rgba(0,0,0,0); padding: 0 16px 0 16px; border: 1px solid; height: 32px">解析文件</input></td>
+    <td colspan="2"><button id="parse-folder-button" class="button-base-style">解析文件</input></td>
 </tr>
 <tr>
-    <td>存储地址:</td>
-    <td><input style="width: 100%;border: 1px solid;padding: 5px;" id="target-path" type="text" value="/${now.getFullYear()}年/${now.getMonth() + 1}月/${now.getDate()}号"/></td>
+    <td>路径:</td>
+    <td><input id="target-path" class="input-base-style" type="text" value="${parseTargetPath(CONFIG.defaultTargetPath)}"/></td>
 </tr>
 </table>
-<div id="status-table-div" style="display: none;width: 650px;height: 490px;margin-bottom: 10px;overflow: auto;border: 1px solid;padding: 5px;">
+<div id="status-table-div" style="display: none;" tabIndex="1">
  <table id="status-table"></table>
 </div>
-<div style="width: 100%;text-align: center;">
-<button id="main-button" style="background-color: rgba(0,0,0,0);font-size: x-large;padding: 5px 23px 5px 23px; border: 1px solid; height: 45px">转存</button>
+<div id="settings-tab" style="display: none;" tabIndex="2">
+<div>
+  <label>默认路径:</label>
+  <input id="default-target-path" class="input-base-style" type="text" value="${CONFIG.defaultTargetPath}">
+</div>
+</div>
+<div id="main-button-container">
+<button id="main-button" class="button-base-style">转存</button>
 </div>
 </div>
 </div>
@@ -145,54 +318,18 @@
       batchUploadInput.click();
     };
 
-    let mainButton = document.getElementById("main-button");
-    mainButton.onclick = () => {
-      mainButton.disabled = true;
-
-      let mainTable = document.getElementById("main-table");
-      mainTable.style.display = "none";
-
-      let urlsTextarea = document.getElementById("urls-textarea");
-      let urls = urlsTextarea.value
-        .split(URLS_SPLIT_REGEX)
-        .map((url) => url.trim())
-        .filter((url) => url.length > 0);
-
-      urls = populateUrls(urls);
-
-      if (urls.length === 0) {
-        unsafeWindow.alert("未能获得有效的链接");
-        return;
-      }
-
-      let statusTable = document.getElementById("status-table");
-      document.getElementById("status-table-div").style.display = null;
-
-      for (let i = 0; i < urls.length; i++) {
-        let url = urls[i];
-        statusTable.insertAdjacentHTML("beforeend",
-          `<tr style="height: 10px"><td style="width: 540px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
-        )
-      }
-
-      mainButton.innerText = "转存中";
-      console.log("batch-save; 有效的 urls = " + urls);
-
-      doBatchTransfer(urls, document.getElementById("target-path").value)
-        .finally(() => {
-          mainButton.onclick = () => {
-            unsafeWindow.location.reload();
-          }
-          mainButton.disabled = false;
-          mainButton.innerText = "完成";
-        })
-    }
-
     document.getElementById("batch-transfer-panel-close").onclick = () => {
-      if (mainButton.disabled === false) {
+      if (document.getElementById("main-button").disabled === false) {
         document.getElementById("batch-transfer-panel").remove();
       }
     }
+
+    document.getElementById("batch-transfer-panel-settings").onclick = () => {
+      let tabIndex = document.getElementById("settings-tab").tabIndex;
+      showPanelTab(tabIndex);
+    }
+
+    showPanelTab(0);
   }
 
   /**
@@ -267,7 +404,7 @@
         await verifyPassCode(currContext);
 
         statusTd.innerText = "获得分享数据";
-        await fullCurrContext(currContext);
+        await fullShareInfo(currContext);
 
         statusTd.innerText = "转存中";
         await transferFile(currContext);
@@ -278,11 +415,6 @@
         statusTd.innerText = "失败: " + e.message;
       }
     }
-
-    localStorage[LAST_OPT_INFO_LOCAL_STOREAGE_KEY] = JSON.stringify({
-      targetPath: globalContext.targetPath
-    });
-
   }
 
   async function createFolderIfNecessary(globalContext) {
@@ -346,7 +478,7 @@
     }
   }
 
-  async function fullCurrContext(currContext) {
+  async function fullShareInfo(currContext) {
     let responseText = await (await fetch(currContext.url)).text();
     try {
       currContext.shareId = responseText.match(/"shareid":(\d+?),"/)[1];
