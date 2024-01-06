@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         百度云直链批量转存
 // @namespace    http://sub.ntt.ink/百度云直链批量转存.user.js
-// @version      1.1.2-TEST
+// @version      1.1.3-TEST
 // @description  百度云直链批量转存
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
@@ -11,6 +11,7 @@
 // ==/UserScript==
 
 (function () {
+  // noinspection CssUnusedSymbol
   const BUTTON_EXIST_ID = "button-gjoiqp2ielldhabsdi123",
     // 配置存储 KEY
     CONFIG_LOCAL_STORAGE_KEY = "lastOpt:gaojap21ogbiualsjhd1",
