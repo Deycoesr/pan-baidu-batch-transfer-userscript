@@ -33,6 +33,7 @@
     [-7, "文件或目录名错误或无权访问"],
     [-10, "云端容量已满"],
     [-8, "文件或目录已存在"],
+    [117, "链接已失效"]
   ]);
 
   function getErrorMessage(errno) {
@@ -347,9 +348,21 @@
 
   async function fullCurrContext(currContext) {
     let responseText = await (await fetch(currContext.url)).text();
-    currContext.shareId = responseText.match(/"shareid":(\d+?),"/)[1];
-    currContext.shareUk = responseText.match(/"share_uk":"(\d+?)","/)[1];
-    currContext.fsId = responseText.match(/"fs_id":(\d+?),"/)[1];
+    try {
+      currContext.shareId = responseText.match(/"shareid":(\d+?),"/)[1];
+      currContext.shareUk = responseText.match(/"share_uk":"(\d+?)","/)[1];
+      currContext.fsId = responseText.match(/"fs_id":(\d+?),"/)[1];
+    } catch (e) {
+      let errnoMatches = responseText.match(/"errno":(\d+?),/);
+      if (errnoMatches && errnoMatches.length > 1) {
+        let errorMsg = ERRNO_MAP_MESSAGE.get(parseInt(errnoMatches[1]));
+        if (errorMsg) {
+          throw new Error(errorMsg);
+        }
+      }
+
+      throw e;
+    }
   }
 
   async function verifyPassCode(currContext) {
