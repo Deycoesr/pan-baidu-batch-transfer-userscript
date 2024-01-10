@@ -5,7 +5,7 @@
 // @description  百度云直链批量转存
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=pan.baidu.com
+// @icon         https://nd-static.bdstatic.com/m-static/v20-main/favicon-main.ico
 // @grant        unsafeWindow
 // @grant        GM_addStyle
 // ==/UserScript==
