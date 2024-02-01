@@ -41,7 +41,7 @@
             for (let i = 0; i < urls.length; i++) {
               let url = urls[i];
               statusTable.insertAdjacentHTML("beforeend",
-                `<tr style="height: 10px"><td style="width: 540px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
+                `<tr style="height: 10px"><td style="width: 520px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
               )
             }
 
@@ -401,10 +401,10 @@
 
       let statusTd = document.getElementById("url-td-" + urlIndex);
       try {
-        statusTd.innerText = "验证提取码";
+        statusTd.innerText = "验证提取码中";
         await verifyPassCode(currContext);
 
-        statusTd.innerText = "获得分享数据";
+        statusTd.innerText = "获得分享数据中";
         await fullShareInfo(currContext);
 
         statusTd.innerText = "转存中";
