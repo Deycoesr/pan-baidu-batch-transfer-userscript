@@ -97,7 +97,7 @@
 #batch-transfer-panel-settings:hover { background-color: #06a7ff }
 #batch-transfer-panel-settings { font-size: large; }
 #batch-transfer-panel-close:hover { background-color: red }
-#batch-transfer-panel-close { font-size: x-large; }
+#batch-transfer-panel-close { font-size: large; }
 #batch-transfer-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border: 1px solid; background-color: white; height: 585px; }
 #main-table { width: 650px; height: 500px; }
 .button-base-style { background-color: rgba(0,0,0,0); border: 1px solid;}
