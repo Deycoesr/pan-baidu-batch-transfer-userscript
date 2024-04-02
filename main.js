@@ -41,7 +41,7 @@
             for (let i = 0; i < urls.length; i++) {
               let url = urls[i];
               statusTable.insertAdjacentHTML("beforeend",
-                `<tr style="height: 10px"><td style="width: 520px">${url}</td><td id="${"url-td-" + i}">未处理</td></tr>`
+                `<tr style="height: 10px"><td style="width: 520px"><a href="${url}" target="_blank">${url}</a></td><td id="${"url-td-" + i}">未处理</td></tr>`
               )
             }
 
