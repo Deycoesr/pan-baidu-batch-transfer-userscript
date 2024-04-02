@@ -82,34 +82,24 @@
         }
       }],
     CSS = `
-#${BUTTON_EXIST_ID} {
-  background-color: #f0faff;
-  border-radius: 16px;
-  margin-left: 5px;
-  padding-left: 16px;
-  padding-right: 16px;
-  border: 0;
-  margin-right: 5px;
-  height: 32px;
-  width: 100px
-}
+#${BUTTON_EXIST_ID} { background-color: #f0faff; border-radius: 16px; margin-left: 5px; padding-left: 16px; padding-right: 16px; border: 0; margin-right: 5px; height: 32px; width: 100px }
 .batch-transfer-panel-controls-base-style { float: right; cursor: pointer; width: 24px; height: 30px; display: flex; justify-content: center; align-items: center; }
 #batch-transfer-panel-settings:hover { background-color: #06a7ff }
 #batch-transfer-panel-settings { font-size: large; }
 #batch-transfer-panel-close:hover { background-color: red }
 #batch-transfer-panel-close { font-size: large; }
 #batch-transfer-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border: 1px solid; background-color: white; height: 585px; }
-#main-table { width: 650px; height: 500px; }
+#main-table { width: 680px; height: 500px; }
 .button-base-style { background-color: rgba(0,0,0,0); border: 1px solid;}
 #parse-folder-button { padding: 0 16px 0 16px; height: 32px }
 #main-button { font-size: x-large; padding: 5px 23px 5px 23px; height: 45px }
-#status-table-div { width: 650px; height: 490px; margin-bottom: 10px; overflow: auto; border: 1px solid; padding: 5px; }
+#status-table-div { width: 680px; height: 490px; margin-bottom: 10px; overflow: auto; border: 1px solid; padding: 5px; }
 #batch-transfer-panel-body { padding: 35px 30px 30px; }
 #urls-textarea { padding: 5px; border: 1px solid; width: 100% }
 #target-path { width: 100%; }
 .input-base-style { border: 1px solid; padding: 5px; }
 #main-button-container { width: 100%;text-align: center; }
-#settings-tab { width: 650px; height: 490px; padding-top: 10px; text-align: center }
+#settings-tab { width: 680px; height: 490px; padding-top: 10px; text-align: center }
 `;
   GM_addStyle(CSS);
 
