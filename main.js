@@ -413,7 +413,7 @@
         statusTd.innerText = "完成";
       } catch (e) {
         console.error(e);
-        statusTd.innerText = "失败: " + e.message;
+        statusTd.innerHTML = `<span style='color: #cc3232'>失败: ${e.message}</span>`;
       }
     }
   }
