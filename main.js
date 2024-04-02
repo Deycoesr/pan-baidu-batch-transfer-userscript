@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         百度云直链批量转存
 // @namespace    http://sub.ntt.ink/百度云直链批量转存.user.js
-// @version      1.1.4
+// @version      1.1.5
 // @description  百度云直链批量转存
 // @author       deycoesr@gmail.com
 // @match        *://pan.baidu.com/disk/*
